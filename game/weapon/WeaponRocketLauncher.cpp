@@ -219,9 +219,11 @@ void rvWeaponRocketLauncher::OnLaunchProjectile ( idProjectile* proj ) {
 	}
 
 	// Launch the projectile
-	idEntityPtr<idEntity> ptr;
-	ptr = proj;
-	guideEnts.Append ( ptr );	
+		idEntityPtr<idEntity> ptr;
+		ptr = proj;
+		guideEnts.Append(ptr);
+		
+
 }
 
 /*
@@ -442,13 +444,22 @@ stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
 	enum {
 		STAGE_INIT,
 		STAGE_WAIT,
+		STAGE_FIREWAIT,
+
 	};	
 	switch ( parms.stage ) {
 		case STAGE_INIT:
+
 			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));		
 			Attack ( false, 1, spread, 0, 1.0f );
-			PlayAnim ( ANIMCHANNEL_LEGS, "fire", parms.blendFrames );	
-			return SRESULT_STAGE ( STAGE_WAIT );
+			PlayAnim(ANIMCHANNEL_LEGS, "fire", parms.blendFrames);
+			if (!AmmoInClip()) {
+				return SRESULT_STAGE(STAGE_WAIT);
+			}
+			else{
+			
+				return SRESULT_STAGE ( STAGE_INIT );
+			}
 	
 		case STAGE_WAIT:			
 			if ( wsfl.attack && gameLocal.time >= nextAttackTime && ( gameLocal.isClient || AmmoInClip ( ) ) && !wsfl.lowerWeapon ) {
@@ -460,6 +471,8 @@ stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
 				return SRESULT_DONE;
 			}
 			return SRESULT_WAIT;
+
+
 	}
 	return SRESULT_ERROR;
 }

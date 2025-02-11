@@ -440,63 +440,50 @@ stateResult_t rvWeaponRocketLauncher::State_Idle( const stateParms_t& parms ) {
 rvWeaponRocketLauncher::State_Fire
 ================
 */
-stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
+stateResult_t rvWeaponRocketLauncher::State_Fire(const stateParms_t& parms) {
 	enum {
 		STAGE_INIT,
-		STAGE_WAIT,
+		STAGE_FIRING,
 		STAGE_FIREWAIT,
+		STAGE_DONE
+	};
 
-	};	
+	static int shotsFired = 0;
+	const int fireDelay = 200;
 
 	switch (parms.stage) {
 	case STAGE_INIT:
+		shotsFired = 0;
 		nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier(PMOD_FIRERATE));
-		Attack(false, 1, spread, 0, 1.0f);
 		currentTime = gameLocal.time;
-		PlayAnim(ANIMCHANNEL_LEGS, "fire", parms.blendFrames);
-		if (!AmmoInClip()) {
-			return SRESULT_STAGE(STAGE_WAIT);
-		}
-		else {
-			if (gameLocal.time > currentTime + 300) {
-				return SRESULT_STAGE(STAGE_INIT);
-			}
-			else {
-				return SRESULT_STAGE(STAGE_FIREWAIT);
-			}
-		}
+		return SRESULT_STAGE(STAGE_FIRING);
 
-	case STAGE_WAIT:
-		if (wsfl.attack && gameLocal.time >= nextAttackTime && (gameLocal.isClient || AmmoInClip()) && !wsfl.lowerWeapon) {
-			SetState("Fire", 0);
-			return SRESULT_DONE;
+	case STAGE_FIRING:
+		if (AmmoInClip() > 0) {  
+			Attack(false, 1, spread, 0, 1.0f);
+			shotsFired++;
+			currentTime = gameLocal.time;
+
+			PlayAnim(ANIMCHANNEL_LEGS, "fire", 0);
+			
+
+			return SRESULT_STAGE(STAGE_FIREWAIT);
 		}
-		if (gameLocal.time > nextAttackTime && AnimDone(ANIMCHANNEL_LEGS, 4)) {
-			SetState("Idle", 4);
-			return SRESULT_DONE;
+		return SRESULT_STAGE(STAGE_DONE);
+
+	case STAGE_FIREWAIT:
+		if (gameLocal.time >= currentTime + fireDelay) {
+			return SRESULT_STAGE(STAGE_FIRING);
 		}
 		return SRESULT_WAIT;
 
-	case STAGE_FIREWAIT:
-	{
+	case STAGE_DONE:
 		SetState("Idle", 4);
-		if (gameLocal.time > currentTime + 300 && AnimDone(ANIMCHANNEL_LEGS, 4)) {
-			return SRESULT_STAGE(STAGE_INIT);
-		}
-		else {
-		SetState("Fire", 0);
-			return SRESULT_STAGE(STAGE_FIREWAIT);
-		}
-		
-		return SRESULT_STAGE(STAGE_WAIT);
-
+		return SRESULT_DONE;
 	}
 
-
-	}
 	return SRESULT_ERROR;
 }
-
 /*
 ================
 rvWeaponRocketLauncher::State_Rocket_Idle

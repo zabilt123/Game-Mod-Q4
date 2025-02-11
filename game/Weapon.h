@@ -335,6 +335,7 @@ public:
 	int								altFireRate;
 	float							spread;
 	int								nextAttackTime;
+	int								currentTime;
 
 	// we maintain local copies of the projectile and brass dictionaries so they
 	// do not have to be copied across the DLL boundary when entities are spawned

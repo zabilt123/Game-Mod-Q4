@@ -447,30 +447,50 @@ stateResult_t rvWeaponRocketLauncher::State_Fire ( const stateParms_t& parms ) {
 		STAGE_FIREWAIT,
 
 	};	
-	switch ( parms.stage ) {
-		case STAGE_INIT:
 
-			nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier ( PMOD_FIRERATE ));		
-			Attack ( false, 1, spread, 0, 1.0f );
-			PlayAnim(ANIMCHANNEL_LEGS, "fire", parms.blendFrames);
-			if (!AmmoInClip()) {
-				return SRESULT_STAGE(STAGE_WAIT);
+	switch (parms.stage) {
+	case STAGE_INIT:
+		nextAttackTime = gameLocal.time + (fireRate * owner->PowerUpModifier(PMOD_FIRERATE));
+		Attack(false, 1, spread, 0, 1.0f);
+		currentTime = gameLocal.time;
+		PlayAnim(ANIMCHANNEL_LEGS, "fire", parms.blendFrames);
+		if (!AmmoInClip()) {
+			return SRESULT_STAGE(STAGE_WAIT);
+		}
+		else {
+			if (gameLocal.time > currentTime + 300) {
+				return SRESULT_STAGE(STAGE_INIT);
 			}
-			else{
-			
-				return SRESULT_STAGE ( STAGE_INIT );
+			else {
+				return SRESULT_STAGE(STAGE_FIREWAIT);
 			}
-	
-		case STAGE_WAIT:			
-			if ( wsfl.attack && gameLocal.time >= nextAttackTime && ( gameLocal.isClient || AmmoInClip ( ) ) && !wsfl.lowerWeapon ) {
-				SetState ( "Fire", 0 );
-				return SRESULT_DONE;
-			}
-			if ( gameLocal.time > nextAttackTime && AnimDone ( ANIMCHANNEL_LEGS, 4 ) ) {
-				SetState ( "Idle", 4 );
-				return SRESULT_DONE;
-			}
-			return SRESULT_WAIT;
+		}
+
+	case STAGE_WAIT:
+		if (wsfl.attack && gameLocal.time >= nextAttackTime && (gameLocal.isClient || AmmoInClip()) && !wsfl.lowerWeapon) {
+			SetState("Fire", 0);
+			return SRESULT_DONE;
+		}
+		if (gameLocal.time > nextAttackTime && AnimDone(ANIMCHANNEL_LEGS, 4)) {
+			SetState("Idle", 4);
+			return SRESULT_DONE;
+		}
+		return SRESULT_WAIT;
+
+	case STAGE_FIREWAIT:
+	{
+		SetState("Idle", 4);
+		if (gameLocal.time > currentTime + 300 && AnimDone(ANIMCHANNEL_LEGS, 4)) {
+			return SRESULT_STAGE(STAGE_INIT);
+		}
+		else {
+		SetState("Fire", 0);
+			return SRESULT_STAGE(STAGE_FIREWAIT);
+		}
+		
+		return SRESULT_STAGE(STAGE_WAIT);
+
+	}
 
 
 	}
